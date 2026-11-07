@@ -338,10 +338,25 @@ export default function DashboardPage() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#101814] p-5">
-            <p className="text-sm text-slate-400">Planned entry fee</p>
-            <p className="mt-3 text-3xl font-black">KSh 50</p>
-            <p className="mt-2 text-xs text-amber-300">Payments not enabled</p>
-          </div>
+  <p className="text-sm text-slate-400">Competition tiers</p>
+  <div className="mt-3 space-y-2">
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">Regular Clash</span>
+      <span className="font-bold">KSh 50</span>
+    </div>
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">Standard Clash</span>
+      <span className="font-bold">KSh 100</span>
+    </div>
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-slate-300">Premium Clash</span>
+      <span className="font-bold">KSh 250</span>
+    </div>
+  </div>
+  <p className="mt-3 text-xs text-amber-300">
+    Payments are currently disabled
+  </p>
+</div>
 
           <div className="rounded-2xl border border-white/10 bg-[#101814] p-5">
             <p className="text-sm text-slate-400">FPL account</p>
@@ -652,7 +667,7 @@ export default function DashboardPage() {
         </section>
 
         <footer className="mt-10 border-t border-white/10 pt-6 text-center text-xs leading-6 text-slate-500">
-          Planned entry fee: KSh 50. Payments are not enabled.
+          Competition tiers: KSh 50, KSh 100 and KSh 250. Payments are currently disabled.
           <br />
           FPL Clash is an independent concept and is not affiliated with or endorsed by the Premier League or Fantasy Premier League.
         </footer>
