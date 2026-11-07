@@ -111,12 +111,14 @@ export default function GameweekManagementPage() {
   }
 
   async function changeStatus(gameweek: Gameweek) {
-    const nextStatus: Gameweek["status"] | undefined = {
-      upcoming: "open",
-      open: "locked",
-      locked: "completed",
-      completed: "open",
-    }[gameweek.status];
+    const statusTransitions = {
+  upcoming: "open",
+  open: "locked",
+  locked: "completed",
+  completed: "open",
+} as const;
+
+const nextStatus = statusTransitions[gameweek.status];
 
     if (!nextStatus) return;
 
