@@ -114,7 +114,7 @@ export async function POST(request: Request) {
           verified: true,
           verification_code: null,
           verification_expires_at: null,
-          team_name: CleanTeamName,
+          team_name: cleanTeamName,
         })
         .eq("id", team.id)
         .eq("user_id", user.id)
