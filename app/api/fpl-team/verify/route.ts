@@ -92,6 +92,9 @@ export async function POST(request: Request) {
     }
 
     const officialTeamName = String(entry.name ?? "");
+    const cleanTeamName = officialTeamName
+  .replace(team.verification_code, "")
+  .trim();
 
     if (!officialTeamName.includes(team.verification_code)) {
       return NextResponse.json(
@@ -111,7 +114,7 @@ export async function POST(request: Request) {
           verified: true,
           verification_code: null,
           verification_expires_at: null,
-          team_name: officialTeamName,
+          team_name: CleanTeamName,
         })
         .eq("id", team.id)
         .eq("user_id", user.id)
