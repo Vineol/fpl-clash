@@ -324,7 +324,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-[#101814] p-5">
             <p className="text-sm text-slate-400">My entries</p>
             <p className="mt-3 text-3xl font-black">{activeEntries.length}</p>
@@ -358,15 +358,6 @@ export default function DashboardPage() {
   </p>
 </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#101814] p-5">
-            <p className="text-sm text-slate-400">FPL account</p>
-            <p className={`mt-3 text-2xl font-black ${teamReady ? "text-green-400" : "text-amber-300"}`}>
-              {teamError ? "Unavailable" : teamReady ? "Verified" : team ? "Pending" : "Not linked"}
-            </p>
-            <p className="mt-2 text-xs text-slate-500">
-              {team?.team_name || "Official FPL team"}
-            </p>
-          </div>
         </section>
 
         <section className="mt-8 grid gap-5 lg:grid-cols-[1.35fr_0.9fr]">
