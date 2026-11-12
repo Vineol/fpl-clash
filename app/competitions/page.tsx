@@ -82,6 +82,7 @@ export default function CompetitionsPage() {
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentSent, setPaymentSent] = useState(false);
   const [paymentNotice, setPaymentNotice] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   async function loadCompetitions() {
     setLoading(true);
@@ -229,6 +230,68 @@ export default function CompetitionsPage() {
       setMessage("Something went wrong. Please try again.");
     } finally {
       setJoiningId(null);
+    }
+  }
+
+  async function cancelReservation() {
+    if (!success || paymentLoading || paymentSent || cancelLoading) return;
+
+    const confirmed = window.confirm(
+      "Cancel this reservation? Your group slot will be released and you can choose another entry tier."
+    );
+
+    if (!confirmed) return;
+
+    setCancelLoading(true);
+    setPaymentMessage("");
+
+    try {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+
+      const accessToken = sessionData.session?.access_token;
+
+      if (sessionError || !accessToken) {
+        router.push("/auth");
+        return;
+      }
+
+      const response = await fetch("/api/payments/cancel-entry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ entryId: success.entry_id }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setPaymentMessage(
+          result.error ||
+            "Could not cancel this reservation. Please try again."
+        );
+        return;
+      }
+
+      setSuccess(null);
+      setPhone("");
+      setPaymentMessage("");
+      setPaymentSent(false);
+      setPaymentNotice("");
+      setMessage(
+        "Reservation cancelled. You can now choose another entry tier."
+      );
+
+      await loadCompetitions();
+    } catch (error) {
+      console.error("Cancel reservation error:", error);
+      setPaymentMessage(
+        "Unable to cancel the reservation. Please try again."
+      );
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -382,6 +445,22 @@ export default function CompetitionsPage() {
               aria-labelledby="entry-reserved-title"
               className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-green-400/30 bg-slate-900 p-6 shadow-2xl"
             >
+              <div className="mb-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => void cancelReservation()}
+                  disabled={paymentLoading || paymentSent || cancelLoading}
+                  aria-label="Cancel reservation and close payment popup"
+                  title={
+                    paymentSent
+                      ? "Payment prompt already sent"
+                      : "Cancel reservation"
+                  }
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-xl text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {cancelLoading ? "…" : "×"}
+                </button>
+              </div>
             <h2 id="entry-reserved-title" className="text-xl font-bold text-green-300">
               Entry reserved successfully!
             </h2>
