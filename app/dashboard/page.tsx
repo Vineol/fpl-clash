@@ -340,6 +340,13 @@ export default function DashboardPage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/wallet"
+              className="rounded-xl border border-green-400/30 bg-green-400/10 px-4 py-2 text-sm font-bold text-green-300 transition hover:bg-green-400/20"
+            >
+              My Wallet →
+            </Link>
+
             <button
               onClick={() => void loadDashboard(true)}
               disabled={refreshing}
