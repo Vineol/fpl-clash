@@ -34,6 +34,8 @@ function normalizePhone(phone: string) {
 }
 
 export async function POST(request: Request) {
+  let depositId: string | null = null;
+
   try {
     if (process.env.MPESA_ENVIRONMENT !== "sandbox") {
       return NextResponse.json(
@@ -75,7 +77,10 @@ export async function POST(request: Request) {
       !phone
     ) {
       return NextResponse.json(
-        { error: "Enter a whole-number deposit amount and a valid Kenyan phone number." },
+        {
+          error:
+            "Enter a whole-number deposit amount and a valid Kenyan phone number.",
+        },
         { status: 400 }
       );
     }
@@ -107,6 +112,15 @@ export async function POST(request: Request) {
       !shortcode ||
       !callbackUrl.startsWith("https://")
     ) {
+      console.error("Wallet M-Pesa configuration incomplete.", {
+        callbackUrlConfigured: Boolean(callbackUrl),
+        callbackUrlIsHttps: callbackUrl?.startsWith("https://") ?? false,
+        consumerKeyConfigured: Boolean(consumerKey),
+        consumerSecretConfigured: Boolean(consumerSecret),
+        passkeyConfigured: Boolean(passkey),
+        shortcodeConfigured: Boolean(shortcode),
+      });
+
       return NextResponse.json(
         { error: "Wallet M-Pesa configuration is incomplete." },
         { status: 500 }
@@ -128,11 +142,14 @@ export async function POST(request: Request) {
 
     if (depositError || !deposit) {
       console.error("Wallet deposit creation failed:", depositError);
+
       return NextResponse.json(
         { error: "Could not prepare your wallet deposit." },
         { status: 500 }
       );
     }
+
+    depositId = deposit.id;
 
     const credentials = Buffer.from(
       `${consumerKey}:${consumerSecret}`
@@ -154,6 +171,11 @@ export async function POST(request: Request) {
         .update({ status: "failed" })
         .eq("id", deposit.id);
 
+      console.error("Wallet Daraja OAuth failed:", {
+        httpStatus: tokenResponse.status,
+        response: tokenData,
+      });
+
       return NextResponse.json(
         { error: "Could not connect to M-Pesa sandbox." },
         { status: 502 }
@@ -161,9 +183,17 @@ export async function POST(request: Request) {
     }
 
     const timestamp = getNairobiTimestamp();
+
     const password = Buffer.from(
       `${shortcode}${passkey}${timestamp}`
     ).toString("base64");
+
+    console.log("Initiating wallet STK Push:", {
+      depositId: deposit.id,
+      amountKes,
+      callbackUrl,
+      environment: "sandbox",
+    });
 
     const stkResponse = await fetch(
       "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
@@ -192,6 +222,18 @@ export async function POST(request: Request) {
 
     const stkData = await stkResponse.json();
 
+    console.log("Wallet STK Push response:", {
+      depositId: deposit.id,
+      httpStatus: stkResponse.status,
+      responseCode: stkData.ResponseCode,
+      responseDescription: stkData.ResponseDescription,
+      checkoutRequestId: stkData.CheckoutRequestID,
+      merchantRequestId: stkData.MerchantRequestID,
+      customerMessage: stkData.CustomerMessage,
+      errorCode: stkData.errorCode,
+      errorMessage: stkData.errorMessage,
+    });
+
     if (
       !stkResponse.ok ||
       stkData.ResponseCode !== "0" ||
@@ -203,10 +245,13 @@ export async function POST(request: Request) {
         .update({ status: "failed" })
         .eq("id", deposit.id);
 
-      console.error("Wallet STK Push failed:", stkData);
-
       return NextResponse.json(
-        { error: stkData.errorMessage ?? stkData.ResponseDescription ?? "M-Pesa could not initiate the deposit." },
+        {
+          error:
+            stkData.errorMessage ??
+            stkData.ResponseDescription ??
+            "M-Pesa could not initiate the deposit.",
+        },
         { status: 502 }
       );
     }
@@ -220,13 +265,26 @@ export async function POST(request: Request) {
       .eq("id", deposit.id);
 
     if (updateError) {
-      console.error("Could not save wallet STK identifiers:", updateError);
+      console.error("Could not save wallet STK identifiers:", {
+        depositId: deposit.id,
+        error: updateError,
+      });
 
       return NextResponse.json(
-        { error: "The payment prompt was sent, but its tracking record needs attention." },
+        {
+          error:
+            "The payment prompt was sent, but its tracking record needs attention.",
+        },
         { status: 500 }
       );
     }
+
+    console.log("Wallet STK request successfully registered:", {
+      depositId: deposit.id,
+      checkoutRequestId: stkData.CheckoutRequestID,
+      merchantRequestId: stkData.MerchantRequestID,
+      callbackUrl,
+    });
 
     return NextResponse.json({
       success: true,
@@ -236,7 +294,10 @@ export async function POST(request: Request) {
       phone,
     });
   } catch (error) {
-    console.error("Wallet STK Push error:", error);
+    console.error("Wallet STK Push error:", {
+      depositId,
+      error,
+    });
 
     return NextResponse.json(
       { error: "Something went wrong while initiating your deposit." },
