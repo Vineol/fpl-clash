@@ -22,6 +22,12 @@ type DarajaCallback = {
 };
 
 export async function POST(request: Request) {
+  console.log("WALLET CALLBACK RECEIVED:", {
+    timestamp: new Date().toISOString(),
+    method: request.method,
+    contentType: request.headers.get("content-type"),
+  });
+
   try {
     const payload = (await request.json()) as DarajaCallback;
     const callback = payload?.Body?.stkCallback;
@@ -31,11 +37,19 @@ export async function POST(request: Request) {
       !callback.MerchantRequestID ||
       typeof callback.ResultCode !== "number"
     ) {
+      console.error("Invalid wallet callback payload.");
+
       return NextResponse.json(
         { ResultCode: 1, ResultDesc: "Invalid callback." },
         { status: 400 }
       );
     }
+
+    console.log("WALLET CALLBACK DETAILS:", {
+      checkoutRequestId: callback.CheckoutRequestID,
+      merchantRequestId: callback.MerchantRequestID,
+      resultCode: callback.ResultCode,
+    });
 
     const items = callback.CallbackMetadata?.Item ?? [];
 
