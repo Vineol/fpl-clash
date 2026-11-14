@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
 
+type MpesaEnvironment = "sandbox" | "production";
+
 function getNairobiTimestamp() {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Africa/Nairobi",
@@ -18,33 +20,119 @@ function getNairobiTimestamp() {
     parts.find((part) => part.type === type)?.value ?? "";
 
   return (
-    value("year") + value("month") + value("day") +
-    value("hour") + value("minute") + value("second")
+    value("year") +
+    value("month") +
+    value("day") +
+    value("hour") +
+    value("minute") +
+    value("second")
   );
 }
 
 function normalizePhone(phone: string) {
-  let cleaned = phone.replace(/[\s+\-()]/g, "");
+  const cleaned = phone.replace(/[\s+\-()]/g, "");
 
-  if (cleaned.startsWith("0")) {
-    cleaned = "254" + cleaned.slice(1);
+  let normalized = cleaned;
+
+  if (normalized.startsWith("0")) {
+    normalized = "254" + normalized.slice(1);
   }
 
-  return /^254[17]\d{8}$/.test(cleaned) ? cleaned : null;
+  return /^254[17]\d{8}$/.test(normalized)
+    ? normalized
+    : null;
 }
 
 export async function POST(request: Request) {
   let depositId: string | null = null;
 
   try {
-    if (process.env.MPESA_ENVIRONMENT !== "sandbox") {
+    // --------------------------------------------------
+    // 1. ENVIRONMENT CONFIGURATION
+    // --------------------------------------------------
+
+    const environment =
+      (process.env.MPESA_ENVIRONMENT || "sandbox") as MpesaEnvironment;
+
+    if (environment !== "sandbox" && environment !== "production") {
       return NextResponse.json(
-        { error: "Wallet deposits are currently sandbox-only." },
+        { error: "Invalid M-Pesa environment configuration." },
+        { status: 500 }
+      );
+    }
+
+    // Production remains disabled until explicitly approved.
+    if (
+      environment === "production" &&
+      process.env.MPESA_PRODUCTION_ENABLED !== "true"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Live M-Pesa payments are disabled. Production activation is required.",
+        },
         { status: 503 }
       );
     }
 
+    const baseUrl =
+      environment === "production"
+        ? "https://api.safaricom.co.ke"
+        : "https://sandbox.safaricom.co.ke";
+
+    // Use separate credentials to prevent mixing environments.
+    const consumerKey =
+      environment === "production"
+        ? process.env.MPESA_PRODUCTION_CONSUMER_KEY
+        : process.env.MPESA_CONSUMER_KEY;
+
+    const consumerSecret =
+      environment === "production"
+        ? process.env.MPESA_PRODUCTION_CONSUMER_SECRET
+        : process.env.MPESA_CONSUMER_SECRET;
+
+    const passkey =
+      environment === "production"
+        ? process.env.MPESA_PRODUCTION_PASSKEY
+        : process.env.MPESA_PASSKEY;
+
+    const shortcode =
+      environment === "production"
+        ? process.env.MPESA_PRODUCTION_SHORTCODE
+        : process.env.MPESA_SHORTCODE;
+
+    const callbackUrl = process.env.WALLET_MPESA_CALLBACK_URL;
+
+    if (
+      !consumerKey ||
+      !consumerSecret ||
+      !passkey ||
+      !shortcode ||
+      !callbackUrl ||
+      !callbackUrl.startsWith("https://")
+    ) {
+      console.error("Wallet M-Pesa configuration incomplete.", {
+        environment,
+        callbackUrlConfigured: Boolean(callbackUrl),
+        callbackUrlIsHttps: callbackUrl?.startsWith("https://") ?? false,
+        consumerKeyConfigured: Boolean(consumerKey),
+        consumerSecretConfigured: Boolean(consumerSecret),
+        passkeyConfigured: Boolean(passkey),
+        shortcodeConfigured: Boolean(shortcode),
+      });
+
+      return NextResponse.json(
+        { error: "Wallet M-Pesa configuration is incomplete." },
+        { status: 500 }
+      );
+    }
+
+    // --------------------------------------------------
+    // 2. AUTHENTICATE USER
+    // --------------------------------------------------
+
     const authorization = request.headers.get("authorization");
+
     const accessToken = authorization?.startsWith("Bearer ")
       ? authorization.slice(7)
       : null;
@@ -66,7 +154,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // --------------------------------------------------
+    // 3. VALIDATE DEPOSIT DETAILS
+    // --------------------------------------------------
+
     const body = await request.json();
+
     const amountKes = Number(body.amount);
     const phone = normalizePhone(String(body.phone ?? ""));
 
@@ -85,6 +178,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // --------------------------------------------------
+    // 4. FIND USER WALLET
+    // --------------------------------------------------
+
     const { data: wallet, error: walletError } = await supabaseAdmin
       .from("wallets")
       .select("id")
@@ -98,34 +195,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const callbackUrl = process.env.WALLET_MPESA_CALLBACK_URL;
-    const consumerKey = process.env.MPESA_CONSUMER_KEY;
-    const consumerSecret = process.env.MPESA_CONSUMER_SECRET;
-    const passkey = process.env.MPESA_PASSKEY;
-    const shortcode = process.env.MPESA_SHORTCODE;
-
-    if (
-      !callbackUrl ||
-      !consumerKey ||
-      !consumerSecret ||
-      !passkey ||
-      !shortcode ||
-      !callbackUrl.startsWith("https://")
-    ) {
-      console.error("Wallet M-Pesa configuration incomplete.", {
-        callbackUrlConfigured: Boolean(callbackUrl),
-        callbackUrlIsHttps: callbackUrl?.startsWith("https://") ?? false,
-        consumerKeyConfigured: Boolean(consumerKey),
-        consumerSecretConfigured: Boolean(consumerSecret),
-        passkeyConfigured: Boolean(passkey),
-        shortcodeConfigured: Boolean(shortcode),
-      });
-
-      return NextResponse.json(
-        { error: "Wallet M-Pesa configuration is incomplete." },
-        { status: 500 }
-      );
-    }
+    // --------------------------------------------------
+    // 5. CREATE PENDING DEPOSIT
+    // --------------------------------------------------
 
     const { data: deposit, error: depositError } = await supabaseAdmin
       .from("wallet_deposits")
@@ -151,14 +223,20 @@ export async function POST(request: Request) {
 
     depositId = deposit.id;
 
+    // --------------------------------------------------
+    // 6. GENERATE DARAJA ACCESS TOKEN
+    // --------------------------------------------------
+
     const credentials = Buffer.from(
       `${consumerKey}:${consumerSecret}`
     ).toString("base64");
 
     const tokenResponse = await fetch(
-      "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials",
+      `${baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
       {
-        headers: { Authorization: `Basic ${credentials}` },
+        headers: {
+          Authorization: `Basic ${credentials}`,
+        },
         cache: "no-store",
       }
     );
@@ -172,15 +250,20 @@ export async function POST(request: Request) {
         .eq("id", deposit.id);
 
       console.error("Wallet Daraja OAuth failed:", {
+        environment,
         httpStatus: tokenResponse.status,
         response: tokenData,
       });
 
       return NextResponse.json(
-        { error: "Could not connect to M-Pesa sandbox." },
+        { error: "Could not connect to M-Pesa." },
         { status: 502 }
       );
     }
+
+    // --------------------------------------------------
+    // 7. GENERATE STK PASSWORD
+    // --------------------------------------------------
 
     const timestamp = getNairobiTimestamp();
 
@@ -188,15 +271,20 @@ export async function POST(request: Request) {
       `${shortcode}${passkey}${timestamp}`
     ).toString("base64");
 
+    // --------------------------------------------------
+    // 8. INITIATE STK PUSH
+    // --------------------------------------------------
+
     console.log("Initiating wallet STK Push:", {
       depositId: deposit.id,
       amountKes,
       callbackUrl,
-      environment: "sandbox",
+      environment,
+      shortcode,
     });
 
     const stkResponse = await fetch(
-      "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+      `${baseUrl}/mpesa/stkpush/v1/processrequest`,
       {
         method: "POST",
         headers: {
@@ -224,6 +312,7 @@ export async function POST(request: Request) {
 
     console.log("Wallet STK Push response:", {
       depositId: deposit.id,
+      environment,
       httpStatus: stkResponse.status,
       responseCode: stkData.ResponseCode,
       responseDescription: stkData.ResponseDescription,
@@ -256,6 +345,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // --------------------------------------------------
+    // 9. SAVE DARAJA TRANSACTION IDENTIFIERS
+    // --------------------------------------------------
+
     const { error: updateError } = await supabaseAdmin
       .from("wallet_deposits")
       .update({
@@ -284,6 +377,7 @@ export async function POST(request: Request) {
       checkoutRequestId: stkData.CheckoutRequestID,
       merchantRequestId: stkData.MerchantRequestID,
       callbackUrl,
+      environment,
     });
 
     return NextResponse.json({
