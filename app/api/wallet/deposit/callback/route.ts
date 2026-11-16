@@ -49,7 +49,24 @@ export async function POST(request: Request) {
       checkoutRequestId: callback.CheckoutRequestID,
       merchantRequestId: callback.MerchantRequestID,
       resultCode: callback.ResultCode,
+      resultDescription: callback.ResultDesc,
     });
+
+    // Do not automatically credit wallets while payments are disabled.
+    if (process.env.PAYMENTS_ENABLED !== "true") {
+      console.error("Wallet callback received while payments are disabled. Manual reconciliation may be required.", {
+        checkoutRequestId: callback.CheckoutRequestID,
+        merchantRequestId: callback.MerchantRequestID,
+        resultCode: callback.ResultCode,
+        resultDescription: callback.ResultDesc,
+      });
+
+      // Acknowledge receipt, but do not credit the wallet.
+      return NextResponse.json({
+        ResultCode: 0,
+        ResultDesc: "Callback received. Wallet processing is disabled.",
+      });
+    }
 
     const items = callback.CallbackMetadata?.Item ?? [];
 

@@ -42,6 +42,14 @@ function normalizePhone(phone: string) {
 }
 
 export async function POST(request: Request) {
+  // Payments remain disabled until explicitly enabled.
+  if (process.env.PAYMENTS_ENABLED !== "true") {
+    return NextResponse.json(
+      { error: "Payments are temporarily disabled." },
+      { status: 503 }
+    );
+  }
+
   try {
     // Sandbox-only protection
     if (process.env.MPESA_ENVIRONMENT !== "sandbox") {

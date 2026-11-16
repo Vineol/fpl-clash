@@ -34,9 +34,29 @@ export async function POST(request: Request) {
     ) {
       console.error("Invalid Daraja callback payload.");
 
+      return NextResponse.json(
+        {
+          ResultCode: 1,
+          ResultDesc: "Invalid callback payload.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Do not process competition payments while payments are disabled.
+    if (process.env.PAYMENTS_ENABLED !== "true") {
+      console.error("Competition payment callback received while payments are disabled.", {
+        checkoutRequestId: callback.CheckoutRequestID,
+        merchantRequestId: callback.MerchantRequestID,
+        resultCode: callback.ResultCode,
+        resultDescription: callback.ResultDesc,
+      });
+
+      // Acknowledge receipt to Safaricom, but do not confirm the entry.
+      // The callback details remain in the server logs for manual investigation.
       return NextResponse.json({
         ResultCode: 0,
-        ResultDesc: "Callback received.",
+        ResultDesc: "Callback received but payment processing is disabled.",
       });
     }
 
@@ -88,7 +108,6 @@ export async function POST(request: Request) {
     if (error) {
       console.error("M-Pesa callback processing failed:", error);
 
-      // Return an error so Safaricom can retry the callback.
       return NextResponse.json(
         {
           ResultCode: 1,
