@@ -1,15 +1,75 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type TopPlayer = {
+  id: number;
+  name: string;
+  fullName: string;
+  club: string;
+  clubCode: string;
+  position: string;
+  points: number;
+  price: string;
+  photo: string;
+};
+
+type PlayerCategory = {
+  category: string;
+  shortLabel: string;
+  player: TopPlayer | null;
+};
+
+type TopPlayersResponse = {
+  players: PlayerCategory[];
+  updatedAt: string;
+};
 
 export default function Home() {
   const [showJoin, setShowJoin] = useState(false);
   const [teamId, setTeamId] = useState("");
   const [message, setMessage] = useState("");
 
+  const [topPlayers, setTopPlayers] = useState<PlayerCategory[]>([]);
+  const [playersLoading, setPlayersLoading] = useState(true);
+  const [playersError, setPlayersError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+
   const whatsappLink =
     "https://wa.me/254745532294?text=Hi%2C%20I%27d%20like%20to%20know%20more%20about%20FPL%20Clash.";
+
+  async function loadTopPlayers() {
+    try {
+      setPlayersError("");
+
+      const response = await fetch("/api/fpl/top-players", {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to retrieve FPL rankings.");
+      }
+
+      const data: TopPlayersResponse = await response.json();
+
+      setTopPlayers(data.players);
+      setLastUpdated(data.updatedAt);
+    } catch (error) {
+      console.error("Top players loading error:", error);
+      setPlayersError("Player rankings are temporarily unavailable.");
+    } finally {
+      setPlayersLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadTopPlayers();
+
+    const interval = setInterval(loadTopPlayers, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   function handleJoin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -22,6 +82,10 @@ export default function Home() {
     setMessage(
       "Demo only: your ID has been entered. Team verification and registration are not connected yet."
     );
+  }
+
+  function playerImage(photo: string) {
+    return `https://resources.premierleague.com/premierleague/photos/players/110x140/p${photo}`;
   }
 
   return (
@@ -46,6 +110,148 @@ export default function Home() {
             className="block h-auto w-full"
           />
         </div>
+      </section>
+
+      {/* Live Top FPL Players */}
+      <section className="mx-auto max-w-7xl px-4 py-12 md:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-black tracking-widest text-emerald-700">
+              THE SEASON'S TOP PERFORMERS
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black md:text-4xl">
+              FPL Top 5
+            </h2>
+
+            <p className="mt-2 text-slate-600">
+              The highest-scoring player in each position, plus the overall
+              number one.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={loadTopPlayers}
+            disabled={playersLoading}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold transition hover:border-emerald-500 hover:text-emerald-700 disabled:opacity-50"
+          >
+            {playersLoading ? "Loading..." : "↻ Refresh"}
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          Official FPL season points
+          {lastUpdated && (
+            <span>
+              · Updated {new Date(lastUpdated).toLocaleTimeString("en-KE", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+        </div>
+
+        {playersLoading && topPlayers.length === 0 ? (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <div
+                key={item}
+                className="h-64 animate-pulse rounded-2xl bg-white shadow-sm"
+              />
+            ))}
+          </div>
+        ) : playersError && topPlayers.length === 0 ? (
+          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+            <p className="font-semibold">{playersError}</p>
+            <button
+              onClick={loadTopPlayers}
+              className="mt-3 font-bold underline"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {topPlayers.map((item, index) => (
+              <article
+                key={item.shortLabel}
+                className={`relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                  item.shortLabel === "TOP PLAYER"
+                    ? "border-emerald-400 ring-2 ring-emerald-100"
+                    : "border-slate-200"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800">
+                    {item.shortLabel}
+                  </span>
+
+                  {item.shortLabel === "TOP PLAYER" && (
+                    <span className="text-lg" aria-label="Number one">
+                      👑
+                    </span>
+                  )}
+                </div>
+
+                {item.player ? (
+                  <>
+                    <div className="mt-4 flex h-32 items-end justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50">
+                      <img
+                        src={playerImage(item.player.photo)}
+                        alt={item.player.fullName}
+                        className="h-32 w-auto object-contain"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+
+                    <p className="mt-4 text-lg font-black leading-tight">
+                      {item.player.name}
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      {item.player.club}
+                    </p>
+
+                    <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">
+                          TOTAL POINTS
+                        </p>
+                        <p className="mt-1 text-3xl font-black text-emerald-700">
+                          {item.player.points}
+                        </p>
+                      </div>
+
+                      <p className="text-xs font-semibold text-slate-500">
+                        £{item.player.price}m
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-8 text-sm text-slate-500">
+                    Player information unavailable.
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {playersError && topPlayers.length > 0 && (
+          <p className="mt-4 text-sm text-amber-700">
+            Refresh failed. Showing the last successfully loaded rankings.
+          </p>
+        )}
+
+        <p className="mt-5 text-xs leading-5 text-slate-500">
+          Rankings are based on official FPL season total points and are not
+          affiliated with or endorsed by the Premier League.
+        </p>
       </section>
 
       {/* Join Competition Button */}
