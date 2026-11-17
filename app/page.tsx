@@ -37,23 +37,26 @@ export default function Home() {
         </span>
       </nav>
 
-      {/* Hero Image with clickable Join button */}
-      <section className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        <div className="relative overflow-hidden rounded-3xl shadow-2xl">
+      {/* Hero Image */}
+      <section className="mx-auto max-w-7xl px-4 pt-2 md:px-6">
+        <div className="overflow-hidden rounded-3xl shadow-2xl">
           <img
             src="/images/fpl-clash-hero.png"
             alt="FPL Clash - Every gameweek. A new battle."
             className="block h-auto w-full"
           />
-
-          {/* Invisible clickable area over the green button in the image */}
-          <a
-            href="/competitions"
-            aria-label="Join a competition"
-            title="Join a competition"
-            className="absolute left-[5%] top-[57%] z-10 h-[9%] w-[25%] cursor-pointer rounded-full focus-visible:outline focus-visible:outline-4 focus-visible:outline-white"
-          />
         </div>
+      </section>
+
+      {/* Join Competition Button */}
+      <section className="mx-auto flex max-w-7xl justify-center px-4 py-8">
+        <a
+          href="/competitions"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-9 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-emerald-600 hover:shadow-xl focus-visible:outline focus-visible:outline-4 focus-visible:outline-emerald-300"
+        >
+          Join a Competition
+          <span aria-hidden="true">→</span>
+        </a>
       </section>
 
       {/* How it works */}
