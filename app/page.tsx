@@ -113,7 +113,7 @@ export default function Home() {
       </section>
 
       {/* Live Top FPL Players */}
-      <section className="mx-auto max-w-7xl px-4 py-12 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 py-7 md:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-black tracking-widest text-emerald-700">
@@ -145,7 +145,8 @@ export default function Home() {
           Official FPL season points
           {lastUpdated && (
             <span>
-              · Updated {new Date(lastUpdated).toLocaleTimeString("en-KE", {
+              · Updated{" "}
+              {new Date(lastUpdated).toLocaleTimeString("en-KE", {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
@@ -154,11 +155,11 @@ export default function Home() {
         </div>
 
         {playersLoading && topPlayers.length === 0 ? (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
             {[1, 2, 3, 4, 5].map((item) => (
               <div
                 key={item}
-                className="h-64 animate-pulse rounded-2xl bg-white shadow-sm"
+                className="h-40 animate-pulse rounded-2xl bg-white shadow-sm"
               />
             ))}
           </div>
@@ -173,11 +174,11 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {topPlayers.map((item, index) => (
+          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+            {topPlayers.map((item) => (
               <article
                 key={item.shortLabel}
-                className={`relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                className={`relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
                   item.shortLabel === "TOP PLAYER"
                     ? "border-emerald-400 ring-2 ring-emerald-100"
                     : "border-slate-200"
@@ -197,37 +198,38 @@ export default function Home() {
 
                 {item.player ? (
                   <>
-                    <div className="mt-4 flex h-32 items-end justify-center overflow-hidden rounded-xl bg-gradient-to-b from-slate-50 to-emerald-50">
+                    <div className="mt-3 flex h-24 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-b from-slate-50 to-emerald-50">
                       <img
                         src={playerImage(item.player.photo)}
                         alt={item.player.fullName}
-                        className="h-32 w-auto object-contain"
+                        className="h-24 w-auto object-contain"
                         loading="lazy"
                         onError={(e) => {
-                          e.currentTarget.style.display = "none";
+                          e.currentTarget.parentElement?.remove();
                         }}
                       />
                     </div>
 
-                    <p className="mt-4 text-lg font-black leading-tight">
+                    <p className="mt-3 text-base font-black leading-tight">
                       {item.player.name}
                     </p>
 
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="mt-1 text-xs text-slate-500">
                       {item.player.club}
                     </p>
 
-                    <div className="mt-4 flex items-end justify-between border-t border-slate-100 pt-3">
+                    <div className="mt-3 flex items-end justify-between border-t border-slate-100 pt-2">
                       <div>
-                        <p className="text-xs font-semibold text-slate-500">
+                        <p className="text-[10px] font-semibold text-slate-500">
                           TOTAL POINTS
                         </p>
-                        <p className="mt-1 text-3xl font-black text-emerald-700">
+
+                        <p className="mt-0.5 text-2xl font-black text-emerald-700">
                           {item.player.points}
                         </p>
                       </div>
 
-                      <p className="text-xs font-semibold text-slate-500">
+                      <p className="text-[10px] font-semibold text-slate-500">
                         £{item.player.price}m
                       </p>
                     </div>
@@ -303,9 +305,7 @@ export default function Home() {
                   STEP {step.number}
                 </p>
 
-                <h3 className="mt-3 text-xl font-bold">
-                  {step.title}
-                </h3>
+                <h3 className="mt-3 text-xl font-bold">{step.title}</h3>
 
                 <p className="mt-3 leading-7 text-slate-600">
                   {step.description}
@@ -370,7 +370,7 @@ export default function Home() {
               className="h-6 w-6"
               aria-hidden="true"
             >
-              <path d="M20.52 3.48A11.87 11.87 0 0 0 12.05 0C5.48 0 .13 5.35.13 11.92c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 0 0 5.77 1.47h.01c6.57 0 11.92-5.35 11.92-11.92 0-3.18-1.24-6.17-3.45-8.43ZM12.05 21.8a9.9 9.9 0 0 1-5.05-1.39l-.36-.21-3.72.97.99-3.63-.24-.37a9.85 9.85 0 0 1-1.52-5.25c0-5.47 4.45-9.92 9.92-9.92 2.65 0 5.14 1.03 7.01 2.91a9.86 9.86 0 0 1 2.9 7.01c0 5.47-4.45 9.92-9.93 9.92Zm5.45-7.42c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.79-1.68-2.09-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.48-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.15.2 2.1 3.2 5.09 4.49.71.31 1.27.49 1.7.63.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2.01-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35Z" />
+              <path d="M20.52 3.48A11.87 11.87 0 0 0 12.05 0C5.48 0 .13 5.35.13 11.92c0 2.1.55 4.15 1.6 5.96L0 24l6.27-1.64a11.9 11.9 0 0 0 5.77 1.47h.01c6.57 0 11.92-5.35 11.92-11.92 0-3.18-1.24-6.17-3.45-8.43ZM12.05 21.8a9.9 9.9 0 0 1-5.05-1.39l-.36-.21-3.72.97.99-3.63-.24-.37a9.85 9.85 0 0 1-1.52-5.25c0-5.47 4.45-9.92 9.92-9.92 2.65 0 5.14 1.03 7.01 2.91a9.86 9.86 0 0 1 2.9 7.01c0 5.47-4.45 9.92-9.93 9.92Zm5.45-7.42c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.5-1.79-1.68-2.09-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.48-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.49s1.07 2.89 1.22 3.09c.07.12.27.2.57.35Z" />
             </svg>
 
             Chat with us on WhatsApp
@@ -383,9 +383,20 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 px-6 py-7 text-center text-sm text-slate-500">
-        FPL Clash · Independent concept project, not affiliated with or endorsed
-        by the Premier League or Fantasy Premier League.
+      <footer className="border-t border-slate-200 bg-white px-6 py-6">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
+          <p className="text-xs leading-5 text-slate-500">
+            FPL Clash · Independent concept project, not affiliated with or
+            endorsed by the Premier League or Fantasy Premier League.
+          </p>
+
+          <p className="shrink-0 text-sm font-semibold italic tracking-wide text-slate-600">
+            Owned by{" "}
+            <span className="font-black not-italic text-emerald-700">
+              Vineol
+            </span>
+          </p>
+        </div>
       </footer>
 
       {/* Demo Registration Modal */}
