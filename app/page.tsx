@@ -84,10 +84,6 @@ export default function Home() {
     );
   }
 
-  function playerImage(photo: string) {
-    return `https://resources.premierleague.com/premierleague/photos/players/110x140/p${photo}`;
-  }
-
   return (
     <main className="min-h-screen bg-[#f5f7f2] text-slate-900">
       {/* Navigation */}
@@ -113,18 +109,18 @@ export default function Home() {
       </section>
 
       {/* Live Top FPL Players */}
-      <section className="mx-auto max-w-7xl px-4 py-7 md:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="mx-auto max-w-7xl px-4 py-5 md:px-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-black tracking-widest text-emerald-700">
+            <p className="text-xs font-black tracking-widest text-emerald-700">
               THE SEASON'S TOP PERFORMERS
             </p>
 
-            <h2 className="mt-2 text-3xl font-black md:text-4xl">
+            <h2 className="mt-1 text-2xl font-black md:text-3xl">
               FPL Top 5
             </h2>
 
-            <p className="mt-2 text-slate-600">
+            <p className="mt-1 text-sm text-slate-600">
               The highest-scoring player in each position, plus the overall
               number one.
             </p>
@@ -140,7 +136,7 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
           Official FPL season points
           {lastUpdated && (
@@ -155,16 +151,16 @@ export default function Home() {
         </div>
 
         {playersLoading && topPlayers.length === 0 ? (
-          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
             {[1, 2, 3, 4, 5].map((item) => (
               <div
                 key={item}
-                className="h-40 animate-pulse rounded-2xl bg-white shadow-sm"
+                className="h-24 animate-pulse rounded-xl bg-white shadow-sm"
               />
             ))}
           </div>
         ) : playersError && topPlayers.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
+          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
             <p className="font-semibold">{playersError}</p>
             <button
               onClick={loadTopPlayers}
@@ -174,68 +170,56 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
             {topPlayers.map((item) => (
               <article
                 key={item.shortLabel}
-                className={`relative overflow-hidden rounded-2xl border bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${
+                className={`relative min-w-0 rounded-xl border bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-md ${
                   item.shortLabel === "TOP PLAYER"
                     ? "border-emerald-400 ring-2 ring-emerald-100"
                     : "border-slate-200"
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-800">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-800">
                     {item.shortLabel}
                   </span>
 
                   {item.shortLabel === "TOP PLAYER" && (
-                    <span className="text-lg" aria-label="Number one">
+                    <span className="text-sm" aria-label="Number one">
                       👑
                     </span>
                   )}
                 </div>
 
                 {item.player ? (
-                  <>
-                    <div className="mt-3 flex h-24 items-end justify-center overflow-hidden rounded-lg bg-gradient-to-b from-slate-50 to-emerald-50">
-                      <img
-                        src={playerImage(item.player.photo)}
-                        alt={item.player.fullName}
-                        className="h-24 w-auto object-contain"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.currentTarget.parentElement?.remove();
-                        }}
-                      />
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-black leading-tight sm:text-base">
+                        {item.player.name}
+                      </p>
+
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {item.player.club}
+                      </p>
                     </div>
 
-                    <p className="mt-3 text-base font-black leading-tight">
-                      {item.player.name}
-                    </p>
+                    <div className="shrink-0 border-l border-slate-100 pl-3 text-right">
+                      <p className="text-[9px] font-semibold text-slate-500">
+                        POINTS
+                      </p>
 
-                    <p className="mt-1 text-xs text-slate-500">
-                      {item.player.club}
-                    </p>
+                      <p className="text-2xl font-black leading-tight text-emerald-700">
+                        {item.player.points}
+                      </p>
 
-                    <div className="mt-3 flex items-end justify-between border-t border-slate-100 pt-2">
-                      <div>
-                        <p className="text-[10px] font-semibold text-slate-500">
-                          TOTAL POINTS
-                        </p>
-
-                        <p className="mt-0.5 text-2xl font-black text-emerald-700">
-                          {item.player.points}
-                        </p>
-                      </div>
-
-                      <p className="text-[10px] font-semibold text-slate-500">
+                      <p className="mt-1 text-[10px] font-semibold text-slate-500">
                         £{item.player.price}m
                       </p>
                     </div>
-                  </>
+                  </div>
                 ) : (
-                  <div className="mt-8 text-sm text-slate-500">
+                  <div className="mt-4 text-sm text-slate-500">
                     Player information unavailable.
                   </div>
                 )}
@@ -245,21 +229,21 @@ export default function Home() {
         )}
 
         {playersError && topPlayers.length > 0 && (
-          <p className="mt-4 text-sm text-amber-700">
+          <p className="mt-3 text-sm text-amber-700">
             Refresh failed. Showing the last successfully loaded rankings.
           </p>
         )}
 
-        <p className="mt-5 text-xs leading-5 text-slate-500">
+        <p className="mt-3 text-xs leading-5 text-slate-500">
           Rankings are based on official FPL season total points and are not
           affiliated with or endorsed by the Premier League.
         </p>
       </section>
 
       {/* Join Competition Button */}
-      <section className="mx-auto flex max-w-7xl justify-center px-4 py-8">
+      <section className="mx-auto flex max-w-7xl justify-center px-4 py-6">
         <a
-          href="/competitions"
+          href="/dashboard"
           className="inline-flex items-center justify-center gap-2 rounded-full bg-emerald-500 px-9 py-4 text-lg font-bold text-white shadow-lg transition hover:bg-emerald-600 hover:shadow-xl focus-visible:outline focus-visible:outline-4 focus-visible:outline-emerald-300"
         >
           Join a Competition
